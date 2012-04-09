@@ -1,10 +1,11 @@
 (ns clj-automata.core
   "This module visualizes elementary cellular automata. It's primarily intended
-   to show off the fun aspects of functional programming in clojure to those who are coming
-   from an OO background
+   to show off the fun aspects of functional programming in clojure to those who are coming from an OO background.
 
    If you're interested in how elementary cellular automata work, see:
    http://en.wikipedia.org/wiki/Elementary_cellular_automaton
+
+   Also, I highly recommend reading this file bottom to top
 
    In particular, the code here makes heavy use of lazy-sequences, both directly through
    `lazy-seq` and also through functions like map, for, partition, and other functions that
@@ -31,6 +32,10 @@
   (:require [quil.core :as qc])
   (:use clojure.pprint)
   (:import java.lang.Math))
+
+;; Colors for each cell
+(def live-color [242 233 99])
+(def dead-color [64 37 27])
 
 (defn int->bdigits
   "Gets the binary digits that comprise an integer as a seq of ints"
@@ -66,11 +71,19 @@
   (let [mappings (rule-mappings number)]
     (fn [triad] (get mappings triad))))
 
+(defn bookend
+  "Pads a seq with a given value on both sides.
+   We use this to make calculating the edge values easier."
+  [x pad-val]
+  (cons pad-val (conj x pad-val)))
+
 (defn simulate
   "Runs a single iteration of a given rule-fn on a given-state"
   [rule-fn state]
   (let [rule (rule-mappings 110)]
-    (for [triad (partition 3 1 (concat [0] state [0]))]
+    ;; We bookend the value below to add a 0 on both sides of the previous state
+    ;; as it makes calculations simpler
+    (for [triad (partition 3 1 (bookend state 0))]
       (rule-fn triad))))
 
 (defn simulation
@@ -79,20 +92,15 @@
   (let [new-state (simulate rule-fn state)]
     (cons new-state (lazy-seq (simulation rule-fn new-state)))))
 
-(def live-color [242 233 99])
-(def dead-color [64 37 27])
-
 (defn draw-buffer
   "Redraw what's on screen given a buffer of cell data at a given scale"
   [buffer scale]
   ;; We use letfn here because we want both of these functions to
   ;; have access to the variables `buffer` and `scale`
   ;; We use two nested `map-index` calls to iterated over the canvas
-  (letfn [(draw-row
-           [y row]
+  (letfn [(draw-row [y row]
            (dorun (map-indexed (fn [x col] (draw-cell x y col)) row)))
-          (draw-cell
-           [x y col]
+          (draw-cell [x y col]
            (apply qc/fill (if (= 1 col) live-color dead-color))
            (qc/rect (* scale x) (* scale y) scale scale))]
     (dorun (map-indexed draw-row buffer))))
@@ -110,6 +118,7 @@
         initial (repeatedly height #(rand-int 2))
         sim (simulation (rule rule-num) initial)
         time-slices (atom (partition height 1 sim))]
+    
     (println "Rule " rule-num " mappings:")
     (pprint (rule-mappings rule-num))
     (qc/defsketch automata
