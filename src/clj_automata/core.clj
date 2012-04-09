@@ -46,8 +46,9 @@
   "Forward pads a seq with 0s to match a given length. Used for making sure int->bdigits hits byte boundaries"
   [x len]
   (let [shortage (- len (count x))]
-    (if (< shortage 1) x
-        (concat (repeat shortage 0) x))))
+    (if (< shortage 1)
+      x
+      (concat (repeat shortage 0) x))))
 
 (def input-patterns
      "The list of possible input sequences for elementary cellular automata, which are easily done by counting down from 8 in binary, and making sure we have at least three digits. This should produce a list like: ((111 110 ...))"
