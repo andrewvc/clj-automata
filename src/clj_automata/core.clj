@@ -51,8 +51,8 @@
       (concat (repeat shortage 0) x))))
 
 (def input-patterns
-     "The list of possible input sequences for elementary cellular automata, which are easily done by counting down from 8 in binary, and making sure we have at least three digits. This should produce a list like: ((111 110 ...))"
-     (map #(zero-pad (int->bdigits %1) 3) (range 8)))
+  "The list of possible input sequences for elementary cellular automata, which are easily done by counting down from 8 in binary, and making sure we have at least three digits. This should produce a list like: ((111 110 ...))"
+  (map #(zero-pad (int->bdigits %1) 3) (range 8)))
 
 (defn rule-mappings
   "Returns a mapping of patterns to new states. Returns a structure like:
@@ -103,10 +103,10 @@
   ;; have access to the variables `buffer` and `scale`
   ;; We use two nested `map-index` calls to iterated over the canvas
   (letfn [(draw-row [y row]
-           (dorun (map-indexed (fn [x col] (draw-cell x y col)) row)))
+            (dorun (map-indexed (fn [x col] (draw-cell x y col)) row)))
           (draw-cell [x y col]
-           (apply qc/fill (if (= 1 col) live-color dead-color))
-           (qc/rect (* scale x) (* scale y) scale scale))]
+            (apply qc/fill (if (= 1 col) live-color dead-color))
+            (qc/rect (* scale x) (* scale y) scale scale))]
     (dorun (map-indexed draw-row buffer))))
 
 (defn setup
@@ -122,7 +122,6 @@
         initial (repeatedly height #(rand-int 2))
         sim (simulation (rule rule-num) initial)
         time-slices (atom (partition height 1 sim))]
-    
     (println "Rule " rule-num " mappings:")
     (pprint (rule-mappings rule-num))
     (qc/defsketch automata
