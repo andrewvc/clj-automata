@@ -45,10 +45,10 @@
 
 (defn zero-pad
   "Forwad pads a seq with 0s to match a given length. Used for making sure int->bdigits hits byte boundaries"
-  [xs len]
-  (let [shortage (- len (count xs))]
-  (if (< shortage 1) xs
-      (concat (repeat shortage 0) xs))))
+  [x len]
+  (let [shortage (- len (count x))]
+  (if (< shortage 1) x
+      (concat (repeat shortage 0) x))))
 
 ;; Load the pattern sequence of 
 (def input-patterns
@@ -74,8 +74,8 @@
 (defn bookend
   "Pads a seq with a given value on both sides.
    We use this to make calculating the edge values easier."
-  [x pad-val]
-  (cons pad-val (conj x pad-val)))
+  [x v]
+  (concat [v] x [v]))
 
 (defn simulate
   "Runs a single iteration of a given rule-fn on a given-state"
