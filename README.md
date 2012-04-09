@@ -3,8 +3,10 @@
 A simple visualization tool for elementary cellular automata. 
 Mostly intended to help others learn clojure.
 
-The source code is heavily annotated, see:
+There's a TON of documentation in the code, please read that, not this, for guide using it, see:
 [clj-automata/core.clj](https://github.com/andrewvc/clj-automata/blob/master/src/clj_automata/core.clj) for the full docs.
+
+For more info on elementary cellular automata, please visit [the wikipedia article](http://en.wikipedia.org/wiki/Elementary_cellular_automaton)
 
 ## Usage
 
