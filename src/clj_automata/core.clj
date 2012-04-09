@@ -1,4 +1,5 @@
-(ns qlearn.core
+(ns clj-automata.core
+  (:gen-class)
   (:require [quil.core :as qc])
   (:use clojure.pprint)
   (:import java.lang.Math))
