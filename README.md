@@ -9,6 +9,7 @@ lein run RULENUMBER
 Here's are some examples:
 
 Rule 22
+
 ![Rule 22](https://img.skitch.com/20120409-jj2cm61k2jax9knp9hmdj98tjt.png)
 
 Rule 110
