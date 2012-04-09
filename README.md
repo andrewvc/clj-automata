@@ -3,6 +3,9 @@
 A simple visualization tool for elementary cellular automata. 
 Mostly intended to help others learn clojure.
 
+The source code is heavily annotated, see:
+[clj-automata/core.clj](https://github.com/andrewvc/clj-automata/blob/master/src/clj_automata/core.clj) for the full docs.
+
 ## Usage
 
 lein run RULE_NUMBER
