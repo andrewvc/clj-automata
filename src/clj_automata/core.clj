@@ -50,8 +50,10 @@
   (if (< shortage 1) x
       (concat (repeat shortage 0) x))))
 
-;; Load the pattern sequence of 
 (def input-patterns
+     "Generate a list of input sequences, which are easily done by counting
+      down from 8 in binary, and making sure we have at least three digits.
+      This should produce a list like: ((111 110 ...))"
      (map #(zero-pad (int->bdigits %1) 3) (range 8)))
 
 (defn rule-mappings
@@ -59,6 +61,7 @@
    {(0 1 1) 1
     ...}"
   [number]
+  ;; Zipmap combines two sequences into a map, much like a zipper!
   (zipmap input-patterns
           (reverse (zero-pad (int->bdigits number) 8))))
 
