@@ -40,20 +40,17 @@
 (defn int->bdigits
   "Gets the binary digits that comprise an integer as a seq of ints"
   [number]
-  (for [c (Integer/toBinaryString number)]
-           (Integer/valueOf (str c))))
+  (for [c (Integer/toBinaryString number)] (Integer/valueOf (str c))))
 
 (defn zero-pad
-  "Forwad pads a seq with 0s to match a given length. Used for making sure int->bdigits hits byte boundaries"
+  "Forward pads a seq with 0s to match a given length. Used for making sure int->bdigits hits byte boundaries"
   [x len]
   (let [shortage (- len (count x))]
-  (if (< shortage 1) x
-      (concat (repeat shortage 0) x))))
+    (if (< shortage 1) x
+        (concat (repeat shortage 0) x))))
 
 (def input-patterns
-     "Generate a list of input sequences, which are easily done by counting
-      down from 8 in binary, and making sure we have at least three digits.
-      This should produce a list like: ((111 110 ...))"
+     "The list of possible input sequences for elementary cellular automata, which are easily done by counting down from 8 in binary, and making sure we have at least three digits. This should produce a list like: ((111 110 ...))"
      (map #(zero-pad (int->bdigits %1) 3) (range 8)))
 
 (defn rule-mappings
@@ -62,14 +59,17 @@
     ...}"
   [number]
   ;; Zipmap combines two sequences into a map, much like a zipper!
+  ;; The key here is that the magic rule numbers are not numbers at all
+  ;; but a sequence rather (their individual binary digits) that get mapped
+  ;; onto the list of possible inputs described in input-patterns.
+  ;; The heart of the generic solution here is really just checking
+  ;; equality of a sequence, which we can do via a lookup in the hashmap
+  ;; this generates
   (zipmap input-patterns
           (reverse (zero-pad (int->bdigits number) 8))))
 
 (defn rule
-  "Returns a function that will process a triad of input values
-   according to rule # Since rules are simple lookup tables, this
-   maps to nothing more than a get really. We use a function to be able
-   to close over the rule-mappings and only evaluate those once."
+  "Returns a function that will process a triad of input values according to a given rule #. Since rules are simple lookup tables, this maps to nothing more than a get really. We use a function here only to be able to close over the rule-mappings and only evaluate those once."
   [number]
   (let [mappings (rule-mappings number)]
     (fn [triad] (get mappings triad))))
