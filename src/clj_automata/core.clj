@@ -156,6 +156,13 @@
       :title (str "Rule " rule-num)
       :setup setup
       :draw (fn drawfn [] ;; Named anonymous functions are easier to stacktrace
+              ;; Lazy sequences can also re-integrate into a more imperitive style
+              ;; What follows below is convenient, but not quite functional.
+              ;; Since the :draw callback is inherently not recursive I went with a
+              ;; more imperitive approach here. We use an atom to maintain the current position
+              ;; within our infinite sequence. This could also have been archieved with a
+              ;; tail recursive loop and not-utilizing the draw callback, but that's left
+              ;; as an excercise for the reader.
               (draw-buffer (first @time-slices) scale)
               (swap! time-slices (fn [_] (rest @time-slices))))
       :size [(* scale width) (* scale height)])))
