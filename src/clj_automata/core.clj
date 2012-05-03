@@ -1,33 +1,33 @@
 (ns clj-automata.core
   "This module visualizes elementary cellular automata. It's primarily intended
-   to show off the fun aspects of functional programming in clojure to those who are coming from an OO background.
+   to show off the fun aspects of functional programming and lazy-sequences in clojure to those who are coming from an OO background.
 
    If you're interested in how elementary cellular automata work, see:
+   http://mathworld.wolfram.com/ElementaryCellularAutomaton.html and
    http://en.wikipedia.org/wiki/Elementary_cellular_automaton
 
-   Also, I highly recommend reading this file bottom to top
+   Also, I highly recommend reading this source file bottom to top in order to understand it best.
 
    In particular, the code here makes heavy use of lazy-sequences, both directly through
    `lazy-seq` and also through functions like map, for, partition, and other functions that
    in clojure return lazy sequences. In some cases, we force lazy-evaluation for side-effects with
    (dorun).
 
-   Since the visualization is of a stream of state for the automata, these features are particularly
-   relevant here. At a high level this library revolves around a single lazy seq that represents
-   all future states.
+   Since the visualization is of a stream of states for the automata, lazy-sequences are a very apt model. 
+   We can define a sequence of all future results, and simply iterate our way toward where we'd like to be.
+   At a high level this library revolves around a single lazy seq that represents all future states.
 
-   The rendering model here is quite simple, we use pure clojure to fill a buffer of data that contains
-   nested 2d lazy sequences representing all currently visible cells on the screen. As we iterate through
-   these lazy sequences we re-render those cells on the canvas. Since it's all lazy, we actually don't have
-   all the pixels referenced in memory at any given time, only those that are being actively worked with.
-
-   The core functions behind the laziness are (simulation), which returns a lazy sequence that perpetually
-   calls (simulate) which looks at the previous row's state and determines what the next row will be.
+   The rendering model here is quite simple, we use pure clojure to fill a 2D array of 1s and 0s that contains
+   the current on-screen state. This 2D buffer is, itself, a partition (e.g. slice) of the lazy sequence of all
+   future states. See the run-rule function for more detail.
+   
+   The core functions behind the laziness are (run-rule) which sets up the initial state and UI, 
+   (simulation), which returns a lazy sequence of results,
+   and (simulate) which does the legwork of applying the automaton's rules.
 
    There are other functional aspects here at play. The (rule) function for instance, is a higher-order function,
-   it's only goal is to return an anonymous function that can determine a given cell's state given its three
-   determining cells from the previous state. The elementary automata algorithm can be easily implemented based on
-   pattern matching."
+   meaning that it returns a brand new function. The function it returns implements a given rule, matching the patterns
+   of the rule to outputs"
   (:gen-class)
   (:require [quil.core :as qc])
   (:use clojure.pprint)
@@ -37,8 +37,12 @@
 (def live-color [242 233 99])
 (def dead-color [64 37 27])
 
+;; Elementary automata use a clever trick to allow us to describe an entire rule with only a few numbers.
+;; Since the automata are essentially pattern matchers, describing what a trio of living / dead cells evaluate to
+;; we can effeciently encode their behaviour as a sequence of 1s and 0s. A good visualization of this can be found
+;; here, at wolfram math world: http://mathworld.wolfram.com/ElementaryCellularAutomaton.html
 (defn int->bdigits
-  "Gets the binary digits that comprise an integer as a seq of ints"
+  "Gets the binary digits that comprise an integer as a seq of ints."
   [number]
   (for [c (Integer/toBinaryString number)] (Integer/valueOf (str c))))
 
@@ -59,7 +63,7 @@
    {(0 1 1) 1
     ...}"
   [number]
-  ;; Zipmap combines two sequences into a map, much like a zipper!
+  ;; Zipmap combines two sequences into a map, much like a real-life zipper!
   ;; The key here is that the magic rule numbers are not numbers at all
   ;; but a sequence rather (their individual binary digits) that get mapped
   ;; onto the list of possible inputs described in input-patterns.
@@ -72,12 +76,17 @@
 (defn rule
   "Returns a function that will process a triad of input values according to a given rule #. Since rules are simple lookup tables, this maps to nothing more than a get really. We use a function here only to be able to close over the rule-mappings and only evaluate those once."
   [number]
+  ;; Applying a rule is really simple, since we've reduced the problem to pattern matching, and
+  ;; clojrue can match lists well (e.g. (= [1 2 3] [1 2 3]) => true even though they're separate
+  ;; objects), can simply see which pattern the 3 given values match with a map lookup via get.
   (let [mappings (rule-mappings number)]
     (fn [triad] (get mappings triad))))
 
+;; Since we assume cells that are off the grid are zeroes, and the far left and far
+;; right calculatoins both require these cells, we make our calculation a bit easier by
+;; simply pretending the previous row has two extra 0s on either side
 (defn bookend
-  "Pads a seq with a given value on both sides.
-   We use this to make calculating the edge values easier."
+  "Pads a seq with a given value on both sides."
   [x v]
   (concat [v] x [v]))
 
@@ -94,14 +103,24 @@
   "Returns a lazy-seq of future states for a given rule-fn and state"
   [rule-fn state]
   (let [new-state (simulate rule-fn state)]
+    ;; This is an infinitely recursive lazy sequence! Notice how we start
+    ;; by considing (prepending) to a new-state onto the head of a not-yet extant
+    ;; lazy sequence. 
+    ;; You'll notice that the lazy sequence is declared with a
+    ;; body that will recurse from the present state, passing the current state into
+    ;; itself. Lazy sequences such as this are inherently tail-recursive, so they won't
+    ;; blow the stack.
     (cons new-state (lazy-seq (simulation rule-fn new-state)))))
 
 (defn draw-buffer
   "Redraw what's on screen given a buffer of cell data at a given scale"
   [buffer scale]
   ;; We use letfn here because we want both of these functions to
-  ;; have access to the variables `buffer` and `scale`
-  ;; We use two nested `map-index` calls to iterated over the canvas
+  ;; have access to the variables `buffer` and `scale`. Closing over them
+  ;; here rather than defining them separately is simply a stylistic choice.
+  ;;
+  ;; We use two nested `map-index` calls to iterated over the canvas row by row,
+  ;; cell by cell, rendering each to the UI
   (letfn [(draw-row [y row]
             (dorun (map-indexed (fn [x col] (draw-cell x y col)) row)))
           (draw-cell [x y col]
@@ -118,12 +137,21 @@
 (defn run-rule [rule-num {:keys [width height scale]}]
   (let [width (or width 100)
         height (or height 100)
-        scale (or scale 5)
+        scale (or scale 5) ; Scale factor for rendering
+        ;; Our initial state is a single row of random 0s and 1s
         initial (repeatedly height #(rand-int 2))
         sim (simulation (rule rule-num) initial)
+        ;; We use partition as a sliding wintdow here. Since sim is
+        ;; an infinite lazy sequence of future rows we use the 3-arity
+        ;; version of partition here to create a 2D view of the visible range
+        ;; of results. Since this is the 3-arity version of partition, with 1
+        ;; specified as the second parameter, each time we grab the next item from
+        ;; the sim sequence we wind up with the same 2D view as before, but shifted ahead
+        ;; one row. This is how the simulation scrolls down!
         time-slices (atom (partition height 1 sim))]
     (println "Rule " rule-num " mappings:")
     (pprint (rule-mappings rule-num))
+    ;; Initialize the graphics
     (qc/defsketch automata
       :title (str "Rule " rule-num)
       :setup setup
