@@ -108,7 +108,7 @@
   [rule-fn state]
   (let [new-state (simulate rule-fn state)]
     ;; This is an infinitely recursive lazy sequence! Notice how we start
-    ;; by considing (prepending) to a new-state onto the head of a not-yet extant
+    ;; by consing (prepending) to a new-state onto the head of a not-yet extant
     ;; lazy sequence. 
     ;; You'll notice that the lazy sequence is declared with a
     ;; body that will recurse from the present state, passing the current state into
