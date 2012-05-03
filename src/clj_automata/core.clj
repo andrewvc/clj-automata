@@ -55,7 +55,9 @@
       (concat (repeat shortage 0) x))))
 
 (def input-patterns
-  "The list of possible input sequences for elementary cellular automata, which are easily done by counting down from 8 in binary, and making sure we have at least three digits. This should produce a list like: ((111 110 ...))"
+  "The list of possible input sequences for elementary cellular automata, which are easily generated
+   by counting down from 8 in binary, and making sure we have at least three digits.
+   This should produce a list like: ((111 110 ...))"
   (map #(zero-pad (int->bdigits %1) 3) (range 8)))
 
 (defn rule-mappings
@@ -74,7 +76,9 @@
           (reverse (zero-pad (int->bdigits number) 8))))
 
 (defn rule
-  "Returns a function that will process a triad of input values according to a given rule #. Since rules are simple lookup tables, this maps to nothing more than a get really. We use a function here only to be able to close over the rule-mappings and only evaluate those once."
+  "Returns a function that will process a triad of input values according to a given rule #.
+   Since rules are simple lookup tables, this maps to nothing more than a get really.
+   We use a function here only to be able to close over the rule-mappings and only evaluate those once."
   [number]
   ;; Applying a rule is really simple, since we've reduced the problem to pattern matching, and
   ;; clojrue can match lists well (e.g. (= [1 2 3] [1 2 3]) => true even though they're separate
